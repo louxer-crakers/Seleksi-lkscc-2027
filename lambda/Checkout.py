@@ -8,7 +8,7 @@ dynamodb = boto3.resource('dynamodb')
 
 # Ambil nama tabel dari environment variable
 # Ini tabel BARU Anda untuk arsip, misal "CheckoutHistory"
-HISTORY_TABLE = os.environ.get('HISTORY_TABLE')
+HISTORY_TABLE = "kits-history"
 table = dynamodb.Table(HISTORY_TABLE)
 
 # --- Helper Functions ---
