@@ -28,7 +28,7 @@ def create_response(status_code, body):
     }
 
 # --- FUNGSI HANDLER UTAMA ---
-def handler(event, context):
+def lambda_handler(event, context):
     
     try:
         data = json.loads(event['body'])

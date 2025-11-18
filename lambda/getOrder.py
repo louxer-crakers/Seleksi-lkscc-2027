@@ -31,7 +31,7 @@ def create_response(status_code, body):
 
 # --- Fungsi Handler Utama (YANG DIMODIFIKASI) ---
 
-def handler(event, context):
+def get_handler(event, context):
     
     # Periksa apakah 'pathParameters' ada DAN 'orderId' ada di dalamnya
     if 'pathParameters' in event and event['pathParameters'] and 'orderId' in event['pathParameters']:

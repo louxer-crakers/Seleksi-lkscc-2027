@@ -42,7 +42,7 @@ def create_response(status_code, body):
 
 # (Tambahkan kode Prasyarat dari atas di sini)
 
-def handler(event, context):
+def create_Prod_handler(event, context):
     try:
         # Ambil data produk dari body permintaan
         # event['body'] adalah string JSON

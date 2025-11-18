@@ -32,7 +32,7 @@ def create_response(status_code, body):
 
 # (Tambahkan kode Prasyarat dari atas di sini)
 
-def handler(event, context):
+def get_handler(event, context):
     try:
         # Ambil userId dari path URL
         user_id = event['pathParameters']['userId']

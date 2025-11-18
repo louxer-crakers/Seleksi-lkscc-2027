@@ -24,7 +24,7 @@ def create_response(status_code, body):
         'body': json.dumps(body, cls=DecimalEncoder)
     }
 
-def handler(event, context):
+def prod_handler(event, context):
     method = event.get('httpMethod')
 
     # --- Ambil productId ---

@@ -23,7 +23,7 @@ def create_response(status_code, body):
     }
 
 # --- Handler Utama (YANG DIMODIFIKASI) ---
-def handler(event, context):
+def get_prod_handler(event, context):
     
     # JALUR 1: Mengambil SATU produk (panggilan ke /products/{productId})
     if 'pathParameters' in event and event['pathParameters'] and 'productId' in event['pathParameters']:

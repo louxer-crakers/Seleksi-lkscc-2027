@@ -34,7 +34,7 @@ def create_response(status_code, body):
 
 # (Tambahkan kode Prasyarat dari atas di sini)
 
-def handler(event, context):
+def Handler(event, context):
     try:
         order_id = event['pathParameters']['orderId']
     except KeyError:

@@ -19,7 +19,7 @@ class DecimalEncoder(json.JSONEncoder):
             return int(obj) if obj % 1 == 0 else float(obj)
         return super(DecimalEncoder, self).default(obj)
 
-def create_response(status_code, body):
+def cart_create_response(status_code, body):
     """ Helper untuk membuat respon API Gateway """
     return {
         'statusCode': status_code,

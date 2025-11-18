@@ -26,7 +26,7 @@ def create_response(status_code, body):
 
 # --- Fungsi Handler Utama ---
 
-def handler(event, context):
+def checkout_handler(event, context):
     try:
         data = json.loads(event['body'])
         
