@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toko LKS CC</title>
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="container navbar-content">
+            <h1 class="logo" id="store-name-display"></h1>
+            
+            <div class="header-controls">
+                <div class="api-status">
+                    <span class="api-status-dot"></span>
+                    <span class="api-status-text">
+                        API Status: <code id="api-url-display">...</code>
+                    </span>
+                </div>
+                
+                <div class="cart-icon-wrapper" onclick="openCartModal()">
+                    <i data-feather="shopping-bag"></i>
+                    <span class="cart-badge" id="cart-count">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2 class="main-title">Koleksi Pilihan Kami</h2>
+
+        <div id="loading-spinner" class="loading-wrapper">
+            <div class="spinner"></div>
+            <p>Memuat produk super...</p>
+        </div>
+
+        <div id="error-message" class="error-box hidden"></div>
+
+        <div id="product-list" class="product-grid">
+            </div>
+    </main>
+    
+    <div id="modal-overlay" class="modal-overlay hidden" onclick="closeCartModal()"></div>
+
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeCartModal()"></div>
+
+    <div id="cart-modal" class="cart-modal hidden">
+        
+        <div id="cart-view">
+            <div class="cart-modal-header">
+                <h2 class="cart-modal-title">Keranjang Anda</h2>
+                <button class="close-btn" onclick="closeCartModal()">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <div id="cart-modal-body" class="cart-modal-body">
+                </div>
+            
+            <div class="cart-modal-footer">
+                <div class="cart-total">
+                    <strong>Total Harga:</strong>
+                    <span id="cart-total-price">Rp 0</span>
+                </div>
+                <button class="checkout-btn" onclick="showCheckoutForm()">
+                    Lanjut ke Checkout
+                    <i data-feather="arrow-right"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div id="checkout-form-view" class="hidden">
+            <div class="cart-modal-header">
+                <button class="back-btn" onclick="showCartView()">
+                    <i data-feather="arrow-left"></i>
+                </button>
+                <h2 class="cart-modal-title">Detail Pembayaran</h2>
+                <button class="close-btn" onclick="closeCartModal()">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <div class="checkout-form">
+                <div id="checkout-error-message" class="checkout-error-text hidden"></div>
+            
+                <div class="form-group">
+                    <label for="checkout-name" class="form-label">Nama Lengkap</label>
+                    <input type="text" id="checkout-name" class="form-input" placeholder="Nama Anda...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkout-address" class="form-label">Alamat Lengkap</label>
+                    <textarea id="checkout-address" class="form-input" rows="3" placeholder="Jalan, Kota, Kode Pos..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkout-payment" class="form-label">Metode Pembayaran</label>
+                    <select id="checkout-payment" class="form-select">
+                        <option value="BCA Virtual Account">BCA Virtual Account</option>
+                        <option value="GoPay">GoPay</option>
+                        <option value="OVO">OVO</option>
+                        <option value="COD (Bayar di Tempat)">COD (Bayar di Tempat)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="cart-modal-footer">
+                <div class="cart-total">
+                    <strong>Total Bayar:</strong>
+                    <span id="checkout-total-price">Rp 0</span> 
+                </div>
+                <button id="pay-now-btn" class="checkout-btn" onclick="handleCheckout()">
+                    Bayar Sekarang
+                    <i data-feather="check-circle"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+    
+    <script>
+        
+        // --- ================================== ---
+        // ---!! PETUNJUK PENGATURAN PENTING !! ---
+        // GANTI NILAI DI DALAM TANDA KUTIP ("...")
+        // --- ================================== ---
+        
+        // 1. GANTI NAMA TOKO ANDA DI SINI
+        const CONFIG_STORE_NAME = "Toko (Change With Your Name)"; 
+        
+        // 2. GANTI URL API GATEWAY ANDA DI SINI
+        const CONFIG_API_URL = "https://xxxxxxxx.execute-api.us-east-1.amazonaws.com/v1";
+        
+        // ---------------------------------
+        // (Jangan ubah kode di bawah ini kecuali Anda tahu apa yang Anda lakukan)
+        // ---------------------------------
+
+
+        // --- Seleksi Elemen DOM ---
+        const productListEl = document.getElementById('product-list');
+        const loadingSpinnerEl = document.getElementById('loading-spinner');
+        const errorMessageEl = document.getElementById('error-message');
+        const cartCountEl = document.getElementById('cart-count');
+        
+        // Elemen baru
+        const storeNameEl = document.getElementById('store-name-display');
+        const apiUrlEl = document.getElementById('api-url-display');
+        const modalOverlayEl = document.getElementById('modal-overlay');
+        const cartModalEl = document.getElementById('cart-modal');
+        const cartModalBodyEl = document.getElementById('cart-modal-body');
+        const cartTotalPriceEl = document.getElementById('cart-total-price');
+
+        
+        /**
+         * Fungsi Utama: Dijalankan saat halaman selesai dimuat
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            // Terapkan Konfigurasi
+            storeNameEl.textContent = CONFIG_STORE_NAME;
+            try {
+                // Tampilkan HANYA domain API-nya, bukan URL lengkap
+                const apiUrlDomain = new URL(CONFIG_API_URL).hostname;
+                apiUrlEl.textContent = apiUrlDomain;
+            } catch (e) {
+                apiUrlEl.textContent = "URL API Tidak Valid";
+                apiUrlEl.parentElement.classList.add('error');
+            }
+
+            fetchProducts(); // Ambil produk
+            renderCartModal(); // Render isi keranjang (meski kosong)
+            updateCartCount(); // Perbarui jumlah keranjang dari localStorage
+            feather.replace(); // Aktifkan ikon
+        });
+
+        
+        /**
+         * Mengambil data SEMUA produk dari API
+         */
+        async function fetchProducts() {
+            showLoading(true);
+            try {
+                const response = await fetch(`${CONFIG_API_URL}/products`);
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                const products = await response.json();
+                displayProducts(products);
+                
+            } catch (error) {
+                console.error("Error di fetchProducts:", error);
+                displayError(`Gagal memuat produk. Cek koneksi atau URL API Anda. (${error.message})`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        
+        /**
+         * Menampilkan produk ke dalam HTML
+         */
+        function displayProducts(products) {
+            productListEl.innerHTML = '';
+            
+            if (products.length === 0) {
+                productListEl.innerHTML = '<p class="info-text">Tidak ada produk untuk ditampilkan.</p>';
+                return;
+            }
+
+            products.forEach(product => {
+                const formattedPrice = formatCurrency(product.price);
+                
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                const imageUrl = product.imageUrl || `https://placehold.co/400x400/EBF4FF/7F8C9A?text=Gambar+Produk`;
+
+                card.innerHTML = `
+                    <div class="product-image-wrapper">
+                        <img class="product-image" src="${imageUrl}" alt="${product.name}" onerror="this.src='https://placehold.co/400x400/FFF0F0/FF5252?text=Gagal+Load'">
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">${product.name}</h3>
+                        <p class="product-description">${product.description || 'Deskripsi tidak tersedia.'}</p>
+                        <div class="product-footer">
+                            <span class="product-price">${formattedPrice}</span>
+                            <button class="add-to-cart-btn" onclick="handleAddToCart(
+                                '${product.productId}', 
+                                '${product.name}', 
+                                ${product.price},
+                                '${imageUrl}' 
+                            )">
+                                <i data-feather="shopping-cart" class="btn-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                productListEl.appendChild(card);
+            });
+            
+            feather.replace();
+        }
+
+        
+        // --- ============================================= ---
+        // --- FUNGSI KERANJANG BELANJA & MODAL
+        // --- ============================================= ---
+        
+        /** Helper: Format Mata Uang */
+        function formatCurrency(number) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(number);
+        }
+
+        /** Helper: Ambil Keranjang */
+        function getCart() {
+            const cartJson = localStorage.getItem('myEcommerceCart');
+            return cartJson ? JSON.parse(cartJson) : [];
+        }
+
+        /** Helper: Simpan Keranjang */
+        function saveCart(cart) {
+            localStorage.setItem('myEcommerceCart', JSON.stringify(cart));
+            updateCartCount(); // Perbarui badge setiap simpan
+            renderCartModal(); // Perbarui modal setiap simpan
+        }
+
+        /** Fungsi: Menangani klik tombol "Tambah" */
+        function handleAddToCart(productId, name, price, imageUrl) {
+            const cart = getCart();
+            const existingItem = cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ id: productId, name: name, price: price, quantity: 1, imageUrl: imageUrl });
+            }
+            
+            saveCart(cart); // Simpan
+            openCartModal(); // Langsung buka modal!
+        }
+
+        /** Fungsi: Membuka Modal */
+        function openCartModal() {
+            modalOverlayEl.classList.remove('hidden');
+            cartModalEl.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Hentikan scroll background
+        }
+
+/** Fungsi: Menutup Modal (Versi Baru) */
+        function closeCartModal() {
+            modalOverlayEl.classList.add('hidden');
+            cartModalEl.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+
+            // --- RESET KONDISI MODAL ---
+            // (Agar saat dibuka lagi, kembali ke keranjang)
+            setTimeout(() => {
+                // 1. Tampilkan view keranjang, sembunyikan form
+                document.getElementById('cart-view').classList.remove('hidden');
+                document.getElementById('checkout-form-view').classList.add('hidden');
+                
+                // 2. Reset isi form checkout
+                document.getElementById('checkout-name').value = '';
+                document.getElementById('checkout-address').value = '';
+                document.getElementById('checkout-payment').value = 'BCA Virtual Account';
+                document.getElementById('checkout-error-message').classList.add('hidden');
+
+                // 3. Reset tombol "Bayar Sekarang" (jika checkout sukses/gagal)
+                const payNowBtn = document.getElementById('pay-now-btn');
+                payNowBtn.disabled = false;
+                payNowBtn.innerHTML = 'Bayar Sekarang <i data-feather="check-circle"></i>';
+                
+                // 4. Render ulang body keranjang (akan menampilkan "Keranjang kosong")
+                renderCartModal();
+                feather.replace();
+            }, 500); // Tunggu animasi tutup modal selesai
+        }
+        
+        /** Fungsi: Merender isi Modal Keranjang */
+        function renderCartModal() {
+            const cart = getCart();
+            
+            // Jika kosong
+            if (cart.length === 0) {
+                cartModalBodyEl.innerHTML = '<p class="info-text">Keranjang Anda masih kosong.</p>';
+                cartTotalPriceEl.textContent = formatCurrency(0);
+                return;
+            }
+            
+            // Jika ada isi
+            cartModalBodyEl.innerHTML = ''; // Kosongkan dulu
+            let totalPrice = 0;
+            
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                totalPrice += itemTotal;
+                const itemImageUrl = item.imageUrl || 'https://placehold.co/100x100/EBF4FF/7F8C9A?text=Img';
+                
+                const itemEl = document.createElement('div');
+                itemEl.className = 'cart-item';
+                itemEl.innerHTML = `
+                    <img class="cart-item-img" src="${itemImageUrl}" alt="${item.name}">
+                    <div class="cart-item-details">
+                        <span class="cart-item-name">${item.name}</span>
+                        <span class="cart-item-price">${formatCurrency(item.price)} x ${item.quantity}</span>
+                    </div>
+                    <span class="cart-item-total">${formatCurrency(itemTotal)}</span>
+                    <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">
+                        <i data-feather="trash-2"></i>
+                    </button>
+                `;
+                cartModalBodyEl.appendChild(itemEl);
+            });
+            
+            // Update total harga
+            cartTotalPriceEl.textContent = formatCurrency(totalPrice);
+            // Perbarui ikon
+            feather.replace();
+        }
+
+        /** Fungsi: Menghapus item dari keranjang */
+        function removeFromCart(productId) {
+            let cart = getCart();
+            // Filter: simpan semua KECUALI yang productId-nya cocok
+            cart = cart.filter(item => item.id !== productId);
+            saveCart(cart);
+        }
+
+        /** Fungsi: Memperbarui angka di ikon keranjang */
+        function updateCartCount() {
+            const totalItems = getCart().reduce((total, item) => total + item.quantity, 0);
+            cartCountEl.textContent = totalItems;
+            cartCountEl.classList.toggle('visible', totalItems > 0);
+        }
+
+/** Fungsi: Menampilkan Form Checkout */
+        function showCheckoutForm() {
+            const cart = getCart();
+            if (cart.length === 0) {
+                alert('Keranjang Anda kosong!');
+                return;
+            }
+
+            // Salin total harga ke view checkout
+            document.getElementById('checkout-total-price').textContent = document.getElementById('cart-total-price').textContent;
+            
+            // Sembunyikan view keranjang, tampilkan view form
+            document.getElementById('cart-view').classList.add('hidden');
+            document.getElementById('checkout-form-view').classList.remove('hidden');
+        }
+
+        /** Fungsi: Kembali ke View Keranjang */
+        function showCartView() {
+            // Sembunyikan view form, tampilkan view keranjang
+            document.getElementById('checkout-form-view').classList.add('hidden');
+            document.getElementById('cart-view').classList.remove('hidden');
+        }
+
+/**
+         * Fungsi: Menangani tombol "Bayar Sekarang" (Versi Super Bagus v2)
+         */
+        async function handleCheckout() {
+            const cart = getCart();
+            
+            // 1. Baca data dari Form
+            const nama = document.getElementById('checkout-name').value;
+            const alamat = document.getElementById('checkout-address').value;
+            const metodePembayaran = document.getElementById('checkout-payment').value;
+            const errorMsgEl = document.getElementById('checkout-error-message');
+
+            // 2. Validasi Form Sederhana
+            if (!nama || !alamat) {
+                errorMsgEl.textContent = 'Nama dan Alamat wajib diisi!';
+                errorMsgEl.classList.remove('hidden');
+                return;
+            }
+            errorMsgEl.classList.add('hidden'); // Sembunyikan error jika valid
+
+            const payNowBtn = document.getElementById('pay-now-btn');
+            const originalBtnText = payNowBtn.innerHTML;
+
+            // 3. Tampilkan status Loading
+            payNowBtn.disabled = true;
+            payNowBtn.innerHTML = '<div class="spinner-btn"></div> Memproses...';
+
+            try {
+                // 4. Siapkan data untuk dikirim (termasuk data form)
+                const userId = "user-demo-123"; // (Masih hardcode)
+                const items = cart.map(item => ({
+                    productId: item.id,
+                    quantity: item.quantity,
+                    price: item.price,
+                    name: item.name,
+                    imageUrl: item.imageUrl
+                }));
+
+                // 5. Panggil Lambda 'createOrder'
+                const orderResponse = await fetch(`${CONFIG_API_URL}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: userId,
+                        items: items,
+                        nama: nama,                 // <-- DATA BARU
+                        alamat: alamat,             // <-- DATA BARU
+                        metodePembayaran: metodePembayaran  // <-- DATA BARU
+                    })
+                });
+
+                if (!orderResponse.ok) {
+                    const errorData = await orderResponse.json();
+                    throw new Error(errorData.message || 'Gagal membuat pesanan');
+                }
+                
+                const newOrder = await orderResponse.json();
+
+                // 6. Panggil Lambda 'archiveCheckout' (jika perlu)
+                // (Lambda archiveCheckout juga harus diupdate untuk data baru ini)
+                fetch(`${CONFIG_API_URL}/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newOrder) // newOrder sudah berisi data form
+                });
+
+                // 7. Tampilkan Pesan Sukses & ANIMASI CONFETTI!
+                
+                // Panggil Confetti! 🎊
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.6 } // Muncul dari tengah layar
+                });
+
+                // Ganti isi modal dengan pesan sukses
+                const checkoutFormView = document.getElementById('checkout-form-view');
+                checkoutFormView.innerHTML = `
+                    <div class="cart-success-message">
+                        <i data-feather="check-circle"></i>
+                        <h3>Pembayaran Berhasil!</h3>
+                        <p>Pesanan Anda <strong>#${newOrder.orderId}</strong> sedang diproses.</p>
+                    </div>
+                `;
+                feather.replace();
+                
+                // 8. Kosongkan keranjang
+                saveCart([]);
+                
+                // 9. Tutup modal secara otomatis
+                setTimeout(() => {
+                    closeCartModal();
+                    // Reset modal ke kondisi semula (akan kita perbaiki di closeCartModal)
+                }, 4000);
+
+            } catch (err) {
+                console.error('Checkout Gagal:', err);
+                errorMsgEl.textContent = `Error: ${err.message}`;
+                errorMsgEl.classList.remove('hidden');
+                payNowBtn.disabled = false;
+                payNowBtn.innerHTML = originalBtnText;
+                feather.replace();
+            }
+        }
+
+
+        // --- ============================================= ---
+        // --- Fungsi Helper Loading & Error
+        // --- ============================================= ---
+
+        function displayError(message) {
+            errorMessageEl.textContent = message;
+            errorMessageEl.classList.remove('hidden');
+        }
+
+        function showLoading(isLoading) {
+            loadingSpinnerEl.classList.toggle('hidden', !isLoading);
+            errorMessageEl.classList.add('hidden');
+            productListEl.classList.toggle('hidden', isLoading);
+        }
+
+    </script>
+</body>
+</html>
