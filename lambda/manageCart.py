@@ -19,7 +19,7 @@ class DecimalEncoder(json.JSONEncoder):
             return int(obj) if obj % 1 == 0 else float(obj)
         return super(DecimalEncoder, self).default(obj)
 
-def cart_create_response(status_code, body):
+def create_response(status_code, body):
     """ Helper untuk membuat respon API Gateway """
     return {
         'statusCode': status_code,
@@ -32,7 +32,7 @@ def cart_create_response(status_code, body):
 
 # (Tambahkan kode Prasyarat dari atas di sini)
 
-def handler(event, context):
+def cart_handler(event, context):
     try:
         user_id = event['pathParameters']['userId']
     except KeyError:
